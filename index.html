@@ -1,1 +1,599 @@
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Golden Cinema - CDN Videy co</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500&display=swap');
 
+  :root {
+    --bg-color: #1b1b1b;
+    --primary-color: #ff9505;
+    --text-color: #f0e6d2;
+    --shadow-color: rgba(255, 149, 5, 0.7);
+    --modal-bg: rgba(27, 27, 27, 0.95);
+    --dot-inactive: #444;
+    --dot-active: var(--primary-color);
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    background: var(--bg-color);
+    color: var(--text-color);
+    font-family: 'Montserrat', sans-serif;
+    overflow-x: hidden;
+  }
+
+  header {
+    font-family: 'Roboto Slab', serif;
+    font-size: 3.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    padding: 1.5rem 2rem;
+    text-align: center;
+    letter-spacing: 0.1em;
+    user-select: none;
+  }
+
+  .slider-container {
+    max-width: 1200px;
+    margin: 0 auto 3rem auto;
+    padding: 0 1.5rem;
+  }
+
+  .grid-slider {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.5rem;
+    perspective: 1000px;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  .grid-slider.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .card {
+    background: #292929;
+    border-radius: 14px;
+    box-shadow: 0 0 15px transparent;
+    position: relative;
+    cursor: pointer;
+    overflow: hidden;
+    transition:
+      transform 0.3s ease,
+      box-shadow 0.3s ease;
+    transform-style: preserve-3d;
+  }
+
+  .card img {
+    width: 100%;
+    height: 320px;
+    object-fit: cover;
+    display: block;
+    border-radius: 14px 14px 0 0;
+    transition: transform 0.3s ease;
+  }
+
+  .card:hover img {
+    transform: scale(1.05);
+  }
+
+  .card-title {
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    font-size: 1.15rem;
+    color: var(--primary-color);
+    text-align: center;
+    background: #222;
+    border-radius: 0 0 14px 14px;
+    user-select: none;
+  }
+
+  .play-btn {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 60px;
+    height: 60px;
+    background: var(--primary-color);
+    border-radius: 50%;
+    box-shadow: 0 0 18px var(--primary-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, -50%) scale(0.8);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    z-index: 10;
+  }
+  .card:hover .play-btn {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  .play-btn svg {
+    fill: #1b1b1b;
+    width: 30px;
+    height: 30px;
+  }
+
+  /* 3D tilt effect */
+  .card.tilt {
+    will-change: transform;
+  }
+
+  /* Navigation dots */
+  .dots-container {
+    text-align: center;
+    margin-top: 1rem;
+  }
+  .dot {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    margin: 0 6px;
+    background: var(--dot-inactive);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+  .dot.active {
+    background: var(--dot-active);
+  }
+
+  /* Load more button */
+  .load-more-container {
+    text-align: center;
+    margin: 2rem 0 4rem;
+  }
+  .load-more-btn {
+    background: var(--primary-color);
+    border: none;
+    border-radius: 30px;
+    padding: 0.75rem 2rem;
+    color: #1b1b1b;
+    font-weight: 700;
+    font-size: 1.2rem;
+    cursor: pointer;
+    box-shadow: 0 0 15px var(--primary-color);
+    transition: background 0.3s ease;
+  }
+  .load-more-btn:hover {
+    background: #ffa733;
+  }
+
+  /* Modal */
+  .modal {
+    position: fixed;
+    top: 0; left: 0; right:0; bottom: 0;
+    background: var(--modal-bg);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+    z-index: 1000;
+  }
+  .modal.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+  .modal-content {
+    position: relative;
+    width: 90vw;
+    max-width: 900px;
+    aspect-ratio: 16 / 9;
+    background: #000;
+    border-radius: 10px;
+    box-shadow: 0 0 40px var(--primary-color);
+    overflow: hidden;
+  }
+  .modal iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+  }
+  .modal-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: var(--primary-color);
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    color: #1b1b1b;
+    font-size: 28px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 0 15px var(--primary-color);
+    transition: background 0.3s ease;
+  }
+  .modal-close:hover {
+    background: #ffa733;
+  }
+
+  /* Responsive */
+  @media (max-width: 1024px) {
+    .card img {
+      height: 280px;
+    }
+  }
+  @media (max-width: 600px) {
+    header {
+      font-size: 2.5rem;
+      padding: 1rem;
+    }
+    .card img {
+      height: 200px;
+    }
+    .play-btn {
+      width: 45px;
+      height: 45px;
+    }
+    .play-btn svg {
+      width: 22px;
+      height: 22px;
+    }
+  }
+</style>
+</head>
+  <script type='text/javascript' src='//pl25360387.profitableratecpm.com/dd/2b/42/dd2b42b09a77c8efe6fdff35fbfbc733.js'></script>
+<body>
+
+<header>GOLDEN VIDEY+</header>
+
+<section class="slider-container" aria-label="Featured Movies">
+
+  <div class="grid-slider" tabindex="0" aria-live="polite" aria-atomic="true">
+    <!-- Cards injected here -->
+  </div>
+
+  <div class="dots-container" role="tablist" aria-label="Slider Navigation">
+    <!-- dots injected here -->
+  </div>
+
+  <div class="load-more-container">
+    <button class="load-more-btn" aria-label="Load more movies">Load More</button>
+  </div>
+</section>
+
+<!-- Modal -->
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal-content">
+    <button class="modal-close" aria-label="Close Video">&times;</button>
+    <iframe id="modal-iframe" src="" allow="autoplay; fullscreen" allowfullscreen title="Movie Trailer"></iframe>
+  </div>
+</div>
+
+<script>
+  const movies = [
+    { title: "Golden 1", img: "https://dragonxcdnvideyy401co.github.io/ixAGHfAE1.mp4/27.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/ixAGHfAE1.mp4" },
+    { title: "Golden 2", img: "https://dragonxcdnvideyy401co.github.io/cea6Wv5B1.mp4/12.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/cea6Wv5B1.mp4" },
+    { title: "Golden 3", img: "https://dragonxcdnvideyy401co.github.io/ra3qIOal1.mp4/25.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/ra3qIOal1.mp4" },
+    { title: "Golden 4", img: "https://dragonxcdnvideyy401co.github.io/9F2NLRoe1.mp4/34.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/9F2NLRoe1.mp4" },
+    { title: "Golden 5", img: "https://dragonxcdnvideyy401co.github.io/8kSSgbHU1.mp4/32.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/8kSSgbHU1.mp4" },
+    { title: "Golden 6", img: "https://dragonxcdnvideyy401co.github.io/xorPznz51.mp4/31.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/xorPznz51.mp4" },
+    { title: "Golden 7", img: "https://dragonxcdnvideyy401co.github.io/rkZbRiBU1.mp4/30.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/rkZbRiBU1.mp4" },
+    { title: "Golden 8", img: "https://dragonxcdnvideyy401co.github.io/Ywt8OD5O1.mp4/26.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/Ywt8OD5O1.mp4" },
+    { title: "Golden 9", img: "https://dragonxcdnvideyy401co.github.io/blG3rDg71.mp4/24.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/blG3rDg71.mp4" },
+    { title: "Golden 10", img: "https://dragonxcdnvideyy401co.github.io/dhE0aOGq1.mp4/23.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/dhE0aOGq1.mp4" },
+    { title: "Golden 11", img: "https://dragonxcdnvideyy401co.github.io/TVgl69lh1.mp4/29.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/TVgl69lh1.mp4" },
+    { title: "Golden 12", img: "https://dragonxcdnvideyy401co.github.io/rkZbRiBU1.mp4/30.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/rkZbRiBU1.mp4" },
+    { title: "Golden 13", img: "https://dragonxcdnvideyy401co.github.io/xorPznz51.mp4/31.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/xorPznz51.mp4" },
+    { title: "Golden 14", img: "https://dragonxcdnvideyy401co.github.io/8kSSgbHU1.mp4/32.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/8kSSgbHU1.mp4" },
+    { title: "Golden 15", img: "https://dragonxcdnvideyy401co.github.io/9F2NLRoe1.mp4/34.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/9F2NLRoe1.mp4" },
+    { title: "Golden 16", img: "https://dragonxcdnvideyy401co.github.io/e9C3AXWl1.mp4/35.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/e9C3AXWl1.mp4" },
+    { title: "Golden 17", img: "https://dragonxcdnvideyy401co.github.io/9dImQoxT1.mp4/36.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/9dImQoxT1.mp4" },
+    { title: "Golden 18", img: "https://dragonxcdnvideyy401co.github.io/dpmAFh4g1.mp4/37.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/dpmAFh4g1.mp4" },
+    { title: "Golden 19", img: "https://dragonxcdnvideyy401co.github.io/5Yqiy5TN1.mp4/38.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/5Yqiy5TN1.mp4" },
+    { title: "Golden 20", img: "https://videyceo-ops.github.io/mfAWhrhs1.mp4/40.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/mfAWhrhs1.mp4" },
+    { title: "Golden 21", img: "https://videyceo-ops.github.io/jC74bg5E1.mp4/39.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/jC74bg5E1.mp4" },
+    { title: "Golden 22", img: "https://videyceo-ops.github.io/rWbC0Th91.mp4/38.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/rWbC0Th91.mp4" },
+    { title: "Golden 23", img: "https://videyceo-ops.github.io/7xJ9z05p1.mp4/37.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/7xJ9z05p1.mp4" },
+    { title: "Golden 24", img: "https://videyceo-ops.github.io/jVcfraSq1.mp4/36.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/jVcfraSq1.mp4" },
+    { title: "Golden 25", img: "https://videyceo-ops.github.io/twIzrMdU1.mp4/34.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/twIzrMdU1.mp4" },
+    { title: "Golden 26", img: "https://videyceo-ops.github.io/UcsKJqHY1.mp4/33.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/UcsKJqHY1.mp4" },
+    { title: "Golden 27", img: "https://videyceo-ops.github.io/Jbi7MAeZ1.mp4/32.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/Jbi7MAeZ1.mp4" },
+    { title: "Golden 28", img: "https://videyceo-ops.github.io/NHHrQ3Kp1.mp4/31.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/NHHrQ3Kp1.mp4" },
+    { title: "Golden 29", img: "https://videyceo-ops.github.io/RjMZi9AC1.mp4/30.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/RjMZi9AC1.mp4" },
+    { title: "Golden 30", img: "https://videyceo-ops.github.io/TQdjgWtQ1.mp4/29.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/TQdjgWtQ1.mp4" },
+    { title: "Golden 31", img: "https://videyceo-ops.github.io/rRpGldSD1.mp4/28.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/rRpGldSD1.mp4" },
+    { title: "Golden 32", img: "https://videyceo-ops.github.io/KdqJQMmO1.mp4/27.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/KdqJQMmO1.mp4" },
+    { title: "Golden 33", img: "https://videyceo-ops.github.io/0e7ygBPY1.mp4/26.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/0e7ygBPY1.mp4" },
+    { title: "Golden 34", img: "https://videyceo-ops.github.io/KWkw0QJp1.mp4/25.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/KWkw0QJp1.mp4" },
+    { title: "Golden 35", img: "https://videyceo-ops.github.io/DfC9YjqS1.mp4/24.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/DfC9YjqS1.mp4" },
+    { title: "Golden 36", img: "https://videyceo-ops.github.io/HidkeCPH1.mp4/23.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/HidkeCPH1.mp4" },
+    { title: "Golden 37", img: "https://videyceo-ops.github.io/a1K3moKR1.mp4/22.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/a1K3moKR1.mp4" },
+    { title: "Golden 38", img: "https://videyceo-ops.github.io/j9X4fTiE1.mp4/21.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/j9X4fTiE1.mp4" },
+    { title: "Golden 39", img: "https://videyceo-ops.github.io/9xOHstVq1.mp4/20.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/9xOHstVq1.mp4" },
+    { title: "Golden 40", img: "https://videyceo-ops.github.io/lSCTcvCi1.mp4/19.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/lSCTcvCi1.mp4" },
+    { title: "Golden 41", img: "https://videyceo-ops.github.io/DNTngSOr1.mp4/18.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/DNTngSOr1.mp4" },
+    { title: "Golden 42", img: "https://videyceo-ops.github.io/0fpvpxNb1.mp4/17.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/0fpvpxNb1.mp4" },
+    { title: "Golden 43", img: "https://videyceo-ops.github.io/OiVYJHts1.mp4/16.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/OiVYJHts1.mp4" },
+    { title: "Golden 44", img: "https://videyceo-ops.github.io/V5YICRMn1.mp4/13.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/0e7ygBPY1.mp4" },
+    { title: "Golden 45", img: "https://videyceo-ops.github.io/iwZYVTLx1.mp4/11.jpg?auto=format&fit=crop&w=600&q=80", video: "https://cdn.videy.co/iwZYVTLx1.mp4" },
+  ];
+
+
+  const slider = document.querySelector('.grid-slider');
+  const dotsContainer = document.querySelector('.dots-container');
+  const loadMoreBtn = document.querySelector('.load-more-btn');
+  const modal = document.getElementById('modal');
+  const modalIframe = document.getElementById('modal-iframe');
+  const modalCloseBtn = modal.querySelector('.modal-close');
+
+  const pageSize = 6; // how many movies per "page"
+  let currentPage = 1;
+
+  // Helpers: create card element
+  function createCard(movie, index) {
+    const card = document.createElement('div');
+    card.className = 'card tilt';
+    card.setAttribute('tabindex', '0');
+    card.setAttribute('role', 'button');
+    card.setAttribute('aria-label', `Play ${movie.title} trailer`);
+    card.dataset.video = movie.video;
+
+    // Image
+    const img = document.createElement('img');
+    img.src = movie.img;
+    img.alt = movie.title + " poster";
+    img.loading = 'lazy';
+    card.appendChild(img);
+
+    // Play button
+    const playBtn = document.createElement('div');
+    playBtn.className = 'play-btn';
+    playBtn.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>`;
+    card.appendChild(playBtn);
+
+    // Title
+    const title = document.createElement('div');
+    title.className = 'card-title';
+    title.textContent = movie.title;
+    card.appendChild(title);
+
+    // Click open modal
+    card.addEventListener('click', () => openModal(movie.video));
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openModal(movie.video);
+      }
+    });
+
+    // 3D Tilt effect on mousemove
+    card.addEventListener('mousemove', (e) => {
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left - rect.width / 2;
+      const y = e.clientY - rect.top - rect.height / 2;
+      const tiltX = (y / rect.height) * 15;
+      const tiltY = -(x / rect.width) * 15;
+      card.style.transform = `rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale(1.03)`;
+      card.style.boxShadow = `0 15px 25px var(--shadow-color)`;
+    });
+    card.addEventListener('mouseleave', () => {
+      card.style.transform = '';
+      card.style.boxShadow = '';
+    });
+
+    return card;
+  }
+
+  // Render a page of movies
+  function renderPage(page) {
+    const start = (page - 1) * pageSize;
+    const end = start + pageSize;
+    const subset = movies.slice(start, end);
+
+    subset.forEach((movie, i) => {
+      slider.appendChild(createCard(movie, start + i));
+    });
+
+    // Fade-in visible
+    setTimeout(() => slider.classList.add('visible'), 100);
+
+    updateDots();
+  }
+
+  // Update dots navigation
+  function updateDots() {
+    dotsContainer.innerHTML = '';
+    const totalPages = Math.ceil(movies.length / pageSize);
+    for (let i = 1; i <= totalPages; i++) {
+      const dot = document.createElement('span');
+      dot.className = 'dot' + (i === currentPage ? ' active' : '');
+      dot.setAttribute('role', 'tab');
+      dot.setAttribute('aria-selected', i === currentPage ? 'true' : 'false');
+      dot.setAttribute('tabindex', '0');
+      dot.addEventListener('click', () => goToPage(i));
+      dot.addEventListener('keydown', e => {
+        if(e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          goToPage(i);
+        }
+      });
+      dotsContainer.appendChild(dot);
+    }
+  }
+
+  // Go to page i
+  function goToPage(i) {
+    if (i === currentPage) return;
+    currentPage = i;
+    slider.innerHTML = '';
+    const start = (currentPage - 1) * pageSize;
+    const end = start + pageSize;
+    movies.slice(start, end).forEach((movie) => {
+      slider.appendChild(createCard(movie));
+    });
+    updateDots();
+  }
+
+  // Load more button - load next page if any
+  loadMoreBtn.addEventListener('click', () => {
+    if ((currentPage * pageSize) >= movies.length) {
+      loadMoreBtn.disabled = true;
+      loadMoreBtn.textContent = 'No More Movies';
+      return;
+    }
+    currentPage++;
+    renderPage(currentPage);
+    if ((currentPage * pageSize) >= movies.length) {
+      loadMoreBtn.disabled = true;
+      loadMoreBtn.textContent = 'No More Movies';
+    }
+  });
+
+  // Modal open
+  function openModal(videoUrl) {
+    modal.classList.add('active');
+    modalIframe.src = videoUrl + "?autoplay=1&controls=1";
+    document.body.style.overflow = 'hidden';
+  }
+
+  // Modal close
+  modalCloseBtn.addEventListener('click', closeModal);
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeModal();
+  });
+  function closeModal() {
+    modal.classList.remove('active');
+    modalIframe.src = '';
+    document.body.style.overflow = '';
+  }
+
+  // Autoplay slider (auto-load next page every 6 seconds)
+  let autoPlayInterval = setInterval(() => {
+    if ((currentPage * pageSize) >= movies.length) {
+      currentPage = 1;
+      slider.innerHTML = '';
+      renderPage(currentPage);
+      loadMoreBtn.disabled = false;
+      loadMoreBtn.textContent = 'Load More';
+      return;
+    }
+    currentPage++;
+    slider.innerHTML = '';
+    renderPage(currentPage);
+  }, 6000);
+
+  // Pause autoplay on hover slider or modal open
+  slider.addEventListener('mouseenter', () => clearInterval(autoPlayInterval));
+  slider.addEventListener('mouseleave', () => {
+    autoPlayInterval = setInterval(() => {
+      if ((currentPage * pageSize) >= movies.length) {
+        currentPage = 1;
+        slider.innerHTML = '';
+        renderPage(currentPage);
+        loadMoreBtn.disabled = false;
+        loadMoreBtn.textContent = 'Load More';
+        return;
+      }
+      currentPage++;
+      slider.innerHTML = '';
+      renderPage(currentPage);
+    }, 6000);
+  });
+  modal.addEventListener('mouseenter', () => clearInterval(autoPlayInterval));
+  modal.addEventListener('mouseleave', () => {
+    autoPlayInterval = setInterval(() => {
+      if ((currentPage * pageSize) >= movies.length) {
+        currentPage = 1;
+        slider.innerHTML = '';
+        renderPage(currentPage);
+        loadMoreBtn.disabled = false;
+        loadMoreBtn.textContent = 'Load More';
+        return;
+      }
+      currentPage++;
+      slider.innerHTML = '';
+      renderPage(currentPage);
+    }, 6000);
+  });
+
+  // Initial render
+  renderPage(currentPage);
+</script>
+
+<script>
+    
+    const secretMessage = document.getElementById('secretMessage');
+    if (secretMessage) { // Check if the element exists to prevent errors
+      secretMessage.classList.add('hidden-css');
+    }
+
+    
+    document.addEventListener('contextmenu', function(e) {
+      e.preventDefault();
+      console.log('Right-click prevented.'); // Optional: for debugging
+    });
+
+    
+    document.addEventListener('keydown', function(e) {
+      const forbiddenKeys = ['F12'];
+      const forbiddenCtrlShiftKeys = ['I', 'J', 'C']; // I for Inspect, J for Console, C for Elements
+      const forbiddenCtrlKeys = ['U', 'S']; // U for View Source, S for Save
+
+      
+      if (forbiddenKeys.includes(e.key)) {
+        e.preventDefault();
+        console.log(`${e.key} key prevented.`);
+      }
+
+      
+      if (e.ctrlKey && e.shiftKey && forbiddenCtrlShiftKeys.includes(e.key.toUpperCase())) {
+        e.preventDefault();
+        console.log(`Ctrl+Shift+${e.key.toUpperCase()} prevented.`);
+      }
+
+      
+      if (e.ctrlKey && forbiddenCtrlKeys.includes(e.key.toUpperCase())) {
+        e.preventDefault();
+        console.log(`Ctrl+${e.key.toUpperCase()} prevented.`);
+      }
+    });
+
+    
+    (function() {
+      var devtools = /devtool/i;
+      var checkStatus = function() {
+        if (devtools.test(function() {}.toString())) {
+          // This part only executes if dev tools are open in some browsers
+          console.warn("Hey! Looks like you're peeking. ??");
+          console.warn("Our content is meant to be enjoyed directly!");
+          // You could also redirect, or overlay content, but that can be annoying for users.
+        }
+      };
+      
+    })();
+
+  </script>
+</body>
+</html>
+
+
+<!-- Histats.com  START  (aync)-->
+<script type="text/javascript">var _Hasync= _Hasync|| [];
+_Hasync.push(['Histats.start', '1,4573229,4,0,0,0,00010000']);
+_Hasync.push(['Histats.fasi', '1']);
+_Hasync.push(['Histats.track_hits', '']);
+_Hasync.push(['Histats.framed_page', '']);
+(function() {
+var hs = document.createElement('script'); hs.type = 'text/javascript'; hs.async = true;
+hs.src = ('//s10.histats.com/js15_as.js');
+(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(hs);
+})();</script>
+<noscript><a href="/" target="_blank"><img  src="//sstatic1.histats.com/0.gif?4573229&101" alt="" border="0"></a></noscript>
+<!-- Histats.com  END  -->
